@@ -117,6 +117,10 @@ class BNReasoner:
         """
         pass
 
-a = BNReasoner('testing/lecture_example.bifxml').bn 
-# a = BNReasoner('testing/lecture_example2.bifxml').bn
-a.draw_structure()
+if __name__ == '__main__':
+    # Playground for testing your code
+    a = BNReasoner('testing/lecture_example.bifxml').bn 
+    # a = BNReasoner('testing/lecture_example2.bifxml').bn
+    a.draw_structure()
+
+    # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
