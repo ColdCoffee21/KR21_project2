@@ -67,20 +67,25 @@ class BNReasoner:
         return updated_factor
 
 
-    def maxing_out(self, x: str, evidence: dict) -> float:
-        """ Given a factor and a variable X, compute the CPT in which X is maxed-out.
-
+    def maxing_out(self, x: str, factor: pd.DataFrame) -> pd.DataFrame:
+        """ 
         :param x: name of variable x
-        :param evidence: dictionary of evidence variables and their values
-        :return: the maximum probability of x given the evidence
+        :param factor: dictionary of evidence variables and their values
+        :return: the CPT in which X is maxed-out
         """
-        pass
+        updated_factor_variables = [v for v in factor.columns if v != x]
+        updated_factor_variables.pop()
 
-    def factor_multiplication(self, x: str, y: str) -> float:
-        """ Given two factors, compute the product of the two factors.
+        updated_factor = factor.groupby(updated_factor_variables).max()
+        updated_factor.reset_index(inplace=True)
+        updated_factor.drop(columns = [x], inplace = True)
+        return updated_factor
 
-        :param x: name of variable x
-        :param y: name of variable y
+    def factor_multiplication(self, f: pd.DataFrame, g: pd.DataFrame) -> pd.DataFrame:
+        """ Given two factors, compute the product of the two factors. h = fg
+
+        :param f: factor 1
+        :param g: factor 2
         :return: the product of the two factors
         """
         pass
@@ -135,4 +140,5 @@ if __name__ == '__main__':
     # print(a.get_all_cpts().values())
     print(a.get_cpt('Wet Grass?'))
     rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
+    print(rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?')))
     # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
