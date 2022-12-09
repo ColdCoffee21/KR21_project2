@@ -1,5 +1,7 @@
 from typing import Union
 from BayesNet import BayesNet
+import pandas as pd
+import itertools
 
 
 class BNReasoner:
@@ -50,14 +52,20 @@ class BNReasoner:
         """
         pass
 
-    def marginalization(self, x: str, evidence: dict) -> float:
-        """ Given a factor and a variable X, compute the CPT in which X is summed-out. 
-
-        :param x: name of variable x
-        :param evidence: dictionary of evidence variables and their values
-        :return: the marginal probability of x given the evidence
+    def marginalization(self, x: str, factor: pd.DataFrame) -> pd.DataFrame:
+        """ 
+        param x: name of variable x
+        param factor: CPT of variables
+        return: Factor in which X is summed-out
         """
-        pass
+        updated_factor_variables = [v for v in factor.columns if v != x]
+        updated_factor_variables.pop()
+        
+        updated_factor = factor.groupby(updated_factor_variables).sum()
+        updated_factor.reset_index(inplace=True)
+        updated_factor.drop(columns = [x], inplace = True)
+        return updated_factor
+
 
     def maxing_out(self, x: str, evidence: dict) -> float:
         """ Given a factor and a variable X, compute the CPT in which X is maxed-out.
@@ -119,8 +127,12 @@ class BNReasoner:
 
 if __name__ == '__main__':
     # Playground for testing your code
-    a = BNReasoner('testing/lecture_example.bifxml').bn 
+    rnr = BNReasoner('testing/lecture_example.bifxml')
+    a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
-    a.draw_structure()
-
+    #a.draw_structure()
+    # print(a.get_all_cpts().keys())
+    # print(a.get_all_cpts().values())
+    print(a.get_cpt('Wet Grass?'))
+    rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
     # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
