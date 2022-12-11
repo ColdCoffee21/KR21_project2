@@ -88,7 +88,15 @@ class BNReasoner:
         :param g: factor 2
         :return: the product of the two factors
         """
-        pass
+        #print(f, "\n", g)
+        g.rename(columns = {'p':'p1'}, inplace = True) # prevent name collision
+        common_variables = [v for v in f.columns if v in g.columns] 
+        h = f.join(g.set_index(common_variables), on=common_variables).reset_index(drop=True) 
+        h['p1'] = h['p1'] * h['p'] # multiply the probabilities
+        h.drop(columns = ['p'], inplace = True)
+        h.rename(columns = {'p1':'p'}, inplace = True) # rename back to p
+        #print(h)
+        return h
 
     def ordering(self, x: str, heuristic: str) -> list:
         """ Given X, compute a good ordering for the elimination of X based on the heuristic
@@ -139,6 +147,9 @@ if __name__ == '__main__':
     # print(a.get_all_cpts().keys())
     # print(a.get_all_cpts().values())
     print(a.get_cpt('Wet Grass?'))
-    rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
+    # print(a.get_all_variables())
+    # print(a.get_cpt('Slippery Road?'))
+    # rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
     print(rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?')))
+    # print(rnr.factor_multiplication(a.get_cpt('Wet Grass?'), a.get_cpt('Sprinkler?')))
     # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
