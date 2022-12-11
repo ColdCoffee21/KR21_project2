@@ -75,11 +75,16 @@ class BNReasoner:
         """
         updated_factor_variables = [v for v in factor.columns if v != x]
         updated_factor_variables.pop()
+        # updated_factor_variables = [v for v in factor.columns if v != 'p'] 
 
         updated_factor = factor.groupby(updated_factor_variables).max()
         updated_factor.reset_index(inplace=True)
-        updated_factor.drop(columns = [x], inplace = True)
-        return updated_factor
+        updated_factor.drop(columns = [x], inplace = True) # Drop the variable that was maxed out
+        
+        tracked_factor = factor.groupby(updated_factor_variables)['p'].idxmax()
+        tracked_factor = factor.loc[tracked_factor] # Keep track of the instances where the max occurs
+
+        return tracked_factor
 
     def factor_multiplication(self, f: pd.DataFrame, g: pd.DataFrame) -> pd.DataFrame:
         """ Given two factors, compute the product of the two factors. h = fg
