@@ -3,6 +3,7 @@ from BayesNet import BayesNet
 import pandas as pd
 import itertools
 import networkx as nx
+from typing import List
 
 
 class BNReasoner:
@@ -64,7 +65,8 @@ class BNReasoner:
         
         updated_factor = factor.groupby(updated_factor_variables).sum()
         updated_factor.reset_index(inplace=True)
-        updated_factor.drop(columns = [x], inplace = True)
+        if x in updated_factor.columns:
+            updated_factor.drop(columns = [x], inplace = True)
         return updated_factor
 
 
@@ -145,14 +147,25 @@ class BNReasoner:
         return ordering
             
 
-    def variable_elimination(self, x: str, evidence: dict) -> float:
-        """ Given a variable X and evidence E, compute the probability of X given E using variable elimination.
+    def variable_elimination(self, X: List[str]) -> pd.DataFrame:
+        """ Sum out a set of variables by using variable elimination (according to given order).
 
-        :param x: name of variable x
-        :param evidence: dictionary of evidence variables and their values
-        :return: the probability of x given the evidence
+        :return: the resulting factor
         """
-        pass
+
+        tau = pd.DataFrame()
+        visited = set()
+        for x in X:
+            if tau.empty:
+                tau = self.bn.get_cpt(x)
+
+            to_visit = set(self.bn.get_children(x)) - set(visited)
+            for child in to_visit:
+                tau = rnr.factor_multiplication(tau, self.bn.get_cpt(child))
+                visited.add(child)
+            tau = self.marginalization(x, tau)
+            visited.add(x)
+        return tau
 
     def marginal_distributions(self, query_variables: str, evidence: dict) -> dict:
         """ Given query variables Q, evidence E, compute the marginal distributions.
@@ -186,13 +199,32 @@ if __name__ == '__main__':
     #a.draw_structure()
     # print(a.get_all_cpts().keys())
     # print(a.get_all_cpts().values())
-    # print(a.get_cpt('Wet Grass?'))
+    print(a.get_cpt('Sprinkler?'))
+    print(a.get_cpt('Winter?'))
     # print(a.get_all_variables())
     # print(a.get_cpt('Slippery Road?'))
     # rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
+    # print(rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?')))
     # print(rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?')))
     # print(rnr.factor_multiplication(a.get_cpt('Wet Grass?'), a.get_cpt('Sprinkler?')))
     # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
     # ['Winter?' : A, 'Sprinkler?' : B, 'Rain?' : C, 'Wet Grass?' : D, 'Slippery Road?' : E]
-    print(rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?', 'Slippery Road?'], 'min-degree'))
-    print(rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?', 'Slippery Road?'], 'min-fill'))
+    # print(rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?', 'Slippery Road?'], 'min-degree'))
+    # print(rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?', 'Slippery Road?'], 'min-fill'))
+
+    # Manual test for VE
+    # t = rnr.factor_multiplication(a.get_cpt('Sprinkler?'), a.get_cpt('Winter?'))
+    # t = rnr.factor_multiplication(t, a.get_cpt('Rain?'))
+    # # print(t)
+    # t = rnr.marginalization('Winter?', t)
+    # # print(t)
+    # t = rnr.factor_multiplication(t, a.get_cpt('Wet Grass?'))
+    # t = rnr.marginalization('Sprinkler?', t)
+    # t = rnr.factor_multiplication(t, a.get_cpt('Slippery Road?'))
+    # t = rnr.marginalization('Rain?', t)
+    # print(t)
+    # print(a.get_children('Winter?'))
+    
+    order = rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?'], 'min-degree')
+    print(order)
+    print(rnr.variable_elimination(order))
