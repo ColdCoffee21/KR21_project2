@@ -2,6 +2,7 @@ from typing import Union
 from BayesNet import BayesNet
 import pandas as pd
 import itertools
+import networkx as nx
 
 
 class BNReasoner:
@@ -103,12 +104,46 @@ class BNReasoner:
         #print(h)
         return h
 
-    def ordering(self, x: str, heuristic: str) -> list:
-        """ Given X, compute a good ordering for the elimination of X based on the heuristic
+    def ordering(self, X: str, heuristic: str) -> list:
+        """ Given a set of variables X, compute a good ordering for the elimination of X based on the heuristic
 
         :return: a topological ordering of the variables in the Bayesian network
         """
-        pass
+
+        interaction_graph = self.bn.get_interaction_graph()
+        ordering = []
+        var_count = len(X)
+
+        if heuristic == "min-fill":
+            for i in range(var_count):
+                cost = {x: 0 for x in X}
+                # Find interactions added by each variable
+                for x in X:
+                    x_neighbours = set(interaction_graph.neighbors(x))
+                    for n in x_neighbours:
+                        n_non_neighbours = nx.non_neighbors(interaction_graph, n)
+                        cost[x] += len(x_neighbours.intersection(n_non_neighbours))
+                # Find the variable with the minimum cost
+                min_fill_node = min(cost, key=cost.get)
+                ordering.append(min_fill_node)
+                interaction_graph.remove_node(min_fill_node)
+                X.remove(min_fill_node)
+                        
+        elif heuristic == "min-degree":
+            for i in range(var_count):
+                x_degrees = {interaction_graph.degree[x]: x for x in X}
+                min_node = x_degrees[min(x_degrees)]
+                ordering.append(min_node) # Queue the variable with the minimum degree to the ordering
+                min_node_neighbours = list(interaction_graph.neighbors(min_node))
+                for n in min_node_neighbours: # Sum out the variable with the minimum degree
+                    e = list(itertools.zip_longest([], min_node_neighbours, fillvalue=n))
+                    interaction_graph.add_edges_from(e)
+                    interaction_graph.remove_edge(n, n)
+                interaction_graph.remove_node(min_node)
+                X.remove(min_node)
+        
+        return ordering
+            
 
     def variable_elimination(self, x: str, evidence: dict) -> float:
         """ Given a variable X and evidence E, compute the probability of X given E using variable elimination.
@@ -151,10 +186,13 @@ if __name__ == '__main__':
     #a.draw_structure()
     # print(a.get_all_cpts().keys())
     # print(a.get_all_cpts().values())
-    print(a.get_cpt('Wet Grass?'))
+    # print(a.get_cpt('Wet Grass?'))
     # print(a.get_all_variables())
     # print(a.get_cpt('Slippery Road?'))
     # rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
-    print(rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?')))
+    # print(rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?')))
     # print(rnr.factor_multiplication(a.get_cpt('Wet Grass?'), a.get_cpt('Sprinkler?')))
     # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
+    # ['Winter?' : A, 'Sprinkler?' : B, 'Rain?' : C, 'Wet Grass?' : D, 'Slippery Road?' : E]
+    print(rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?', 'Slippery Road?'], 'min-degree'))
+    print(rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?', 'Wet Grass?', 'Slippery Road?'], 'min-fill'))
