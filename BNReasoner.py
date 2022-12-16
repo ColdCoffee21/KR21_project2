@@ -161,19 +161,43 @@ class BNReasoner:
 
             to_visit = set(self.bn.get_children(x)) - set(visited)
             for child in to_visit:
-                tau = rnr.factor_multiplication(tau, self.bn.get_cpt(child))
+                tau = self.factor_multiplication(tau, self.bn.get_cpt(child))
                 visited.add(child)
             tau = self.marginalization(x, tau)
             visited.add(x)
         return tau
 
-    def marginal_distributions(self, query_variables: str, evidence: dict) -> dict:
+    def marginal_distributions(self, Q: List[str], e: dict, heuristic="min-degree") -> pd.DataFrame:
         """ Given query variables Q, evidence E, compute the marginal distributions.
 
         :param evidence: dictionary of evidence variables and their values
-        :return: a dictionary of the marginal distributions of all variables in the Bayesian network
+        :return: Posterior Marginal
         """
-        pass
+
+        e = pd.Series(e)
+        to_be_eliminated = set(self.bn.get_all_variables()) - set(Q)
+        ordering = self.ordering(to_be_eliminated, heuristic)
+
+        tau = pd.DataFrame()
+        visited = set()
+        for x in ordering:
+            if tau.empty:
+                tau = self.bn.get_cpt(x)
+                if any([var in e.index for var in tau.columns]):
+                    tau = self.bn.reduce_factor(e, tau)
+            
+            to_visit = set(self.bn.get_children(x)) - set(visited)
+            for child in to_visit:
+                child_reduced = self.bn.get_cpt(child)
+                if any([var in e.index for var in child_reduced.columns]):
+                    child_reduced = self.bn.reduce_factor(e, child_reduced)
+                tau = self.factor_multiplication(tau, child_reduced)
+                visited.add(child)
+            tau = self.marginalization(x, tau)
+            visited.add(x)
+        
+        tau['p'] = tau['p'] / tau['p'].sum()
+        return tau
 
     def MAP(self, evidence: dict) -> dict:
         """ Given evidence E, compute the MAP assignment of query variables in the Bayesian network.
@@ -193,14 +217,16 @@ class BNReasoner:
 
 if __name__ == '__main__':
     # Playground for testing your code
-    rnr = BNReasoner('testing/lecture_example.bifxml')
+    # rnr = BNReasoner('testing/lecture_example.bifxml')
+    # rnr = BNReasoner('testing/lecture_example2.bifxml')
+    rnr = BNReasoner('testing/lecture_example3.bifxml')
     a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
     #a.draw_structure()
     # print(a.get_all_cpts().keys())
     # print(a.get_all_cpts().values())
-    print(a.get_cpt('Sprinkler?'))
-    print(a.get_cpt('Winter?'))
+    # print(a.get_cpt('Sprinkler?'))
+    # print(a.get_cpt('Winter?'))
     # print(a.get_all_variables())
     # print(a.get_cpt('Slippery Road?'))
     # rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
@@ -225,6 +251,29 @@ if __name__ == '__main__':
     # print(t)
     # print(a.get_children('Winter?'))
     
-    order = rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?'], 'min-degree')
-    print(order)
-    print(rnr.variable_elimination(order))
+    # order = rnr.ordering(['Winter?', 'Sprinkler?', 'Rain?'], 'min-degree')
+    # print(order)
+    # print(rnr.variable_elimination(order))
+    # print(rnr.variable_elimination(['Sprinkler?', 'Slippery Road?']))
+
+    # order = rnr.ordering(['A', 'B'], 'min-degree')
+    # print(rnr.variable_elimination(order))
+
+    # print(a.get_cpt('A'))
+    # print(a.get_cpt('B'))
+    # print(a.get_cpt('C'))
+
+    # print(a.reduce_factor(pd.Series({'A': True}), a.get_cpt('A')))
+    # print(a.reduce_factor(pd.Series({'A': True}), a.get_cpt('B')))
+    # print(a.reduce_factor(pd.Series({'A': True}), a.get_cpt('C')))
+
+    # Q = ['C']
+    # to_be_eliminated = set(a.get_all_variables()) - set(Q)
+    # print(to_be_eliminated)
+    # posterior = rnr.marginal_distributions(['C'], {'A': True})
+    # posterior = rnr.marginal_distributions(['B', 'C'], {'A': True})
+    # posterior = rnr.marginal_distributions(['B', 'C'], None)
+    
+    posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
+    # posterior = rnr.marginal_distributions(['O', 'X'], None)
+    print(posterior)
