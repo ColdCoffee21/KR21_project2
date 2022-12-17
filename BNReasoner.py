@@ -182,6 +182,9 @@ class BNReasoner:
         tau = pd.DataFrame()
         visited = set()
         for x in ordering:
+            if x not in visited and not tau.empty:
+                tau = self.factor_multiplication(tau, self.bn.get_cpt(x))
+            
             if tau.empty:
                 tau = self.bn.get_cpt(x)
                 if any([var in e.index for var in tau.columns]):
@@ -197,17 +200,16 @@ class BNReasoner:
             if not x in Q:
                 tau = self.marginalization(x, tau)
             visited.add(x)
-        
+
         tau['p'] = tau['p'] / tau['p'].sum()
         return tau
 
-    def MAP(self, evidence: dict) -> dict:
-        """ Given evidence E, compute the MAP assignment of query variables in the Bayesian network.
+    def MAP(self, Q: List[str], e: dict) -> dict:
+        """ Computes the MAP instantiation + value of query variables Q, given a possibly empty evidence e. 
 
-        :param evidence: dictionary of evidence variables and their values
         :return: a dictionary of the MAP assignment of query variables in the Bayesian network
         """
-        pass
+
 
     def MEP(self, evidence: dict) -> dict:
         """ Given evidence E, compute the MEP assignment of query variables in the Bayesian network.
@@ -277,5 +279,6 @@ if __name__ == '__main__':
     # posterior = rnr.marginal_distributions(['B', 'C'], None)
     
     # posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
-    posterior = rnr.marginal_distributions(['O', 'X'], None)
+    # posterior = rnr.marginal_distributions(['O', 'X'], None)
+    posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
     print(posterior)
