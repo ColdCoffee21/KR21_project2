@@ -103,6 +103,7 @@ class BNReasoner:
         h['p1'] = h['p1'] * h['p'] # multiply the probabilities
         h.drop(columns = ['p'], inplace = True)
         h.rename(columns = {'p1':'p'}, inplace = True) # rename back to p
+        g.rename(columns = {'p1':'p'}, inplace = True) # rename the original cpt back to p
         #print(h)
         return h
 
@@ -156,6 +157,9 @@ class BNReasoner:
         tau = pd.DataFrame()
         visited = set()
         for x in X:
+            if x not in visited and not tau.empty:
+                tau = self.factor_multiplication(tau, self.bn.get_cpt(x))
+
             if tau.empty:
                 tau = self.bn.get_cpt(x)
 
@@ -211,10 +215,9 @@ class BNReasoner:
         """
 
 
-    def MEP(self, evidence: dict) -> dict:
-        """ Given evidence E, compute the MEP assignment of query variables in the Bayesian network.
+    def MEP(self, e: dict) -> dict:
+        """ Given evidence e, compute the MEP assignment of query variables in the Bayesian network.
 
-        :param evidence: dictionary of evidence variables and their values
         :return: a dictionary of the MEP assignment of query variables in the Bayesian network
         """
         pass
@@ -222,8 +225,8 @@ class BNReasoner:
 if __name__ == '__main__':
     # Playground for testing your code
     # rnr = BNReasoner('testing/lecture_example.bifxml')
-    rnr = BNReasoner('testing/lecture_example2.bifxml')
-    # rnr = BNReasoner('testing/lecture_example3.bifxml')
+    # rnr = BNReasoner('testing/lecture_example2.bifxml')
+    rnr = BNReasoner('testing/lecture_example3.bifxml')
     a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
     #a.draw_structure()
@@ -279,6 +282,28 @@ if __name__ == '__main__':
     # posterior = rnr.marginal_distributions(['B', 'C'], None)
     
     # posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
-    # posterior = rnr.marginal_distributions(['O', 'X'], None)
-    posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
+    posterior = rnr.marginal_distributions(['O', 'X'], None)
+    # posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
     print(posterior)
+
+    # Checking VE for Q = [O, X]
+    # Q = ['O', 'X']
+    # wo_x = rnr.variable_elimination(['I', 'J', 'Y'])
+    # c = ['I', 'J', 'Y']
+    # for var in ['I', 'J', 'Y']:
+    #     c = c + rnr.bn.get_children(var)
+    # for var in Q:
+    #     if var not in c:
+    #         wo_x = rnr.factor_multiplication(wo_x, rnr.bn.get_cpt(var))
+    # print(wo_x)
+
+    # Checking VE for Q = [B, C]
+    # Q = ['B', 'C']
+    # wo_x = rnr.variable_elimination(['A'])
+    # c = ['A']
+    # for var in ['A']:
+    #     c = c + rnr.bn.get_children(var)
+    # for var in Q:
+    #     if var not in c:
+    #         wo_x = rnr.factor_multiplication(rnr.bn.get_cpt(var), wo_x)
+    # print(wo_x)
