@@ -177,6 +177,7 @@ class BNReasoner:
         e = pd.Series(e)
         to_be_eliminated = set(self.bn.get_all_variables()) - set(Q)
         ordering = self.ordering(to_be_eliminated, heuristic)
+        ordering = ordering + Q
 
         tau = pd.DataFrame()
         visited = set()
@@ -193,7 +194,8 @@ class BNReasoner:
                     child_reduced = self.bn.reduce_factor(e, child_reduced)
                 tau = self.factor_multiplication(tau, child_reduced)
                 visited.add(child)
-            tau = self.marginalization(x, tau)
+            if not x in Q:
+                tau = self.marginalization(x, tau)
             visited.add(x)
         
         tau['p'] = tau['p'] / tau['p'].sum()
@@ -218,8 +220,8 @@ class BNReasoner:
 if __name__ == '__main__':
     # Playground for testing your code
     # rnr = BNReasoner('testing/lecture_example.bifxml')
-    # rnr = BNReasoner('testing/lecture_example2.bifxml')
-    rnr = BNReasoner('testing/lecture_example3.bifxml')
+    rnr = BNReasoner('testing/lecture_example2.bifxml')
+    # rnr = BNReasoner('testing/lecture_example3.bifxml')
     a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
     #a.draw_structure()
@@ -274,6 +276,6 @@ if __name__ == '__main__':
     # posterior = rnr.marginal_distributions(['B', 'C'], {'A': True})
     # posterior = rnr.marginal_distributions(['B', 'C'], None)
     
-    posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
-    # posterior = rnr.marginal_distributions(['O', 'X'], None)
+    # posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
+    posterior = rnr.marginal_distributions(['O', 'X'], None)
     print(posterior)
