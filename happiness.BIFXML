@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+
+<!--Example crafted by Group 3 - KR VU 22/23 -->
+
+<!--
+	Bayesian network in XMLBIF v0.3 (BayesNet Interchange Format)
+-->
+
+
+
+<!-- DTD for the XMLBIF 0.3 format -->
+<!DOCTYPE BIF [
+	<!ELEMENT BIF ( NETWORK )*>
+	      <!ATTLIST BIF VERSION CDATA #REQUIRED>
+	<!ELEMENT NETWORK ( NAME, ( PROPERTY | VARIABLE | DEFINITION )* )>
+	<!ELEMENT NAME (#PCDATA)>
+	<!ELEMENT VARIABLE ( NAME, ( OUTCOME |  PROPERTY )* ) >
+	      <!ATTLIST VARIABLE TYPE (nature|decision|utility) "nature">
+	<!ELEMENT OUTCOME (#PCDATA)>
+	<!ELEMENT DEFINITION ( FOR | GIVEN | TABLE | PROPERTY )* >
+	<!ELEMENT FOR (#PCDATA)>
+	<!ELEMENT GIVEN (#PCDATA)>
+	<!ELEMENT TABLE (#PCDATA)>
+	<!ELEMENT PROPERTY (#PCDATA)>
+]>
+
+
+<BIF VERSION="0.3">
+<NETWORK>
+<NAME>Pursuing-Happines</NAME>
+
+<!-- Variables -->
+<VARIABLE TYPE="nature">
+	<NAME>Intelligent</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (120, 50)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Wealthy</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (275, 50)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Attractive</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (430, 50)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Studied-abroad</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (40, 200)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Higher-education</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (195, 250)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Owns-house</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (350, 200)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Married</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (500, 200)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Has-kids</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (350, 300)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Has-pets</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (500, 300)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Fullfilling-job</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (120, 350)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Their-idea</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (430, 400)</PROPERTY>
+</VARIABLE>
+
+<VARIABLE TYPE="nature">
+	<NAME>Happy</NAME>
+	<OUTCOME>true</OUTCOME>
+	<OUTCOME>false</OUTCOME>
+	<PROPERTY>position = (275, 500)</PROPERTY>
+</VARIABLE>
+
+<!-- Probability distributions -->
+<DEFINITION>
+	<FOR>Intelligent</FOR>
+	<TABLE>0.6 0.4 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Wealthy</FOR>
+	<TABLE>0.61 0.39 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Attractive</FOR>
+	<TABLE>0.4 0.6 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Studied-abroad</FOR>
+	<GIVEN>Intelligent</GIVEN>
+	<GIVEN>Wealthy</GIVEN>
+	<TABLE>0.99 0.01 0.925 0.075 0.9 0.1 0.75 0.25 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Studied-abroad</FOR>
+	<GIVEN>Intelligent</GIVEN>
+	<GIVEN>Wealthy</GIVEN>
+	<TABLE>0.99 0.01 0.97 0.03 0.9 0.1 0.3 0.7 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Higher-education</FOR>
+	<GIVEN>Intelligent</GIVEN>
+	<GIVEN>Wealthy</GIVEN>
+	<GIVEN>Attractive</GIVEN>
+	<TABLE>0.95 0.05 0.54 0.46 0.78 0.22 0.47 0.53 0.7 0.3 0.35 0.65 0.46 0.54 0.17 0.83 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Owns-house</FOR>
+	<GIVEN>Intelligent</GIVEN>
+	<GIVEN>Wealthy</GIVEN>
+	<GIVEN>Attractive</GIVEN>
+	<TABLE>0.43 0.57 0.4 0.6 0.23 0.77 0.2 0.8 0.38 0.62 0.36 0.64 0.12 0.88 0.1 0.9 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Married</FOR>
+	<GIVEN>Wealthy</GIVEN>
+	<GIVEN>Attractive</GIVEN>
+	<TABLE>0.5 0.5 0.32 0.68 0.24 0.76 0.15 0.85 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Fullfilling-job</FOR>
+	<GIVEN>Studied-abroad</GIVEN>
+	<GIVEN>Higher-education</GIVEN>
+	<TABLE>0.8 0.2 0.45 0.55 0.35 0.65 0.2 0.8 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Has-kids</FOR>
+	<GIVEN>Owns-house</GIVEN>
+	<GIVEN>Married</GIVEN>
+	<TABLE>0.75 0.25 0.42 0.58 0.4 0.6 0.32 0.68 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Has-pets</FOR>
+	<GIVEN>Owns-house</GIVEN>
+	<GIVEN>Married</GIVEN>
+	<TABLE>0.6 0.4 0.47 0.53 0.43 0.57 0.4 0.6 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Their-idea</FOR>
+	<GIVEN>Has-kids</GIVEN>
+	<GIVEN>Has-pets</GIVEN>
+	<TABLE>0.25 0.75 0.35 0.65 0.05 0.95 0.15 0.85 </TABLE>
+</DEFINITION>
+
+<DEFINITION>
+	<FOR>Happy</FOR>
+	<GIVEN>Fullfilling-job</GIVEN>
+	<GIVEN>Their-idea</GIVEN>
+	<TABLE>0.7 0.3 0.4 0.6 0.4 0.6 0.2 0.8 </TABLE>
+</DEFINITION>
+
+</NETWORK>
+</BIF>
