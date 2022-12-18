@@ -109,6 +109,9 @@ class BNReasoner:
         """
         updated_factor_variables = [v for v in factor.columns if v != x]
         updated_factor_variables.pop()
+        for var in updated_factor_variables:
+            if "track_" in var:
+                updated_factor_variables.remove(var)
         
         updated_factor = pd.DataFrame()
         if len(updated_factor_variables) == 0:
@@ -135,9 +138,30 @@ class BNReasoner:
         updated_factor = factor.groupby(updated_factor_variables).max()
         updated_factor.reset_index(inplace=True)
         updated_factor.drop(columns = [x], inplace = True) # Drop the variable that was maxed out
-        
+
         tracked_factor = factor.groupby(updated_factor_variables)['p'].idxmax()
         tracked_factor = factor.loc[tracked_factor] # Keep track of the instances where the max occurs
+
+        return tracked_factor
+
+    def maxing_out2(self, x: str, factor: pd.DataFrame) -> pd.DataFrame:
+        """ 
+        :param x: name of variable x
+        :param factor: dictionary of evidence variables and their values
+        :return: the CPT in which X is maxed-out
+        """
+        updated_factor_variables = [v for v in factor.columns if v not in ['p', x]]
+        for var in updated_factor_variables:
+            if "track_" in var:
+                updated_factor_variables.remove(var)
+
+        if len(updated_factor_variables) == 0:
+            updated_factor = factor['p'].max()
+            return updated_factor
+
+        tracked_factor = factor.groupby(updated_factor_variables)['p'].idxmax()
+        tracked_factor = factor.loc[tracked_factor] # Keep track of the instances where the max occurs
+        tracked_factor.rename(columns = {x: 'track_' + x}, inplace = True) # For tracking purposes
 
         return tracked_factor
 
@@ -151,6 +175,14 @@ class BNReasoner:
         #print(f, "\n", g)
         g.rename(columns = {'p':'p1'}, inplace = True) # prevent name collision
         common_variables = [v for v in f.columns if v in g.columns] 
+        for var in common_variables:
+            if "track_" in var:
+                common_variables.remove(var)
+        if common_variables == []:
+            print("Factor Multiplication Warning: No common variables")
+            g.rename(columns = {'p1':'p'}, inplace = True)
+            return pd.DataFrame()
+
         h = f.join(g.set_index(common_variables), on=common_variables).reset_index(drop=True) 
         h['p1'] = h['p1'] * h['p'] # multiply the probabilities
         h.drop(columns = ['p'], inplace = True)
@@ -219,6 +251,38 @@ class BNReasoner:
             for child in to_visit:
                 tau = self.factor_multiplication(tau, self.bn.get_cpt(child))
                 visited.add(child)
+            tau = self.marginalization(x, tau)
+            visited.add(x)
+        return tau
+
+    def variable_elimination_fix(self, X: List[str]) -> pd.DataFrame:
+        """ Sum out a set of variables by using variable elimination (according to given order).
+
+        :return: the resulting factor
+        """
+
+        tau = pd.DataFrame()
+        visited = set()
+        later = []
+        for x in X:
+            if x not in visited and not tau.empty:
+                tau_ = self.factor_multiplication(tau, self.bn.get_cpt(x))
+                if tau_.empty:
+                    later.append(x)
+                    continue
+                tau = tau_
+
+            if tau.empty:
+                tau = self.bn.get_cpt(x)
+
+            to_visit = set(self.bn.get_children(x)) - set(visited)
+            for child in to_visit:
+                tau = self.factor_multiplication(tau, self.bn.get_cpt(child))
+                visited.add(child)
+            
+            for v in later:
+                if v in tau.columns:
+                    tau = self.factor_multiplication(tau, self.bn.get_cpt(v))
             tau = self.marginalization(x, tau)
             visited.add(x)
         return tau
@@ -305,17 +369,25 @@ class BNReasoner:
         return tau.iloc[-1].to_dict()
 
 
-    def MEP(self, e: dict) -> dict:
+    def MPE(self, e: dict) -> dict:
         """ Given evidence e, compute the MEP assignment of query variables in the Bayesian network.
 
         :return: a dictionary of the MEP assignment of query variables in the Bayesian network
         """
-        pass
+        # self.networkPrune(self.bn.get_all_variables(), evidence = pd.Series(e), updateCPT=True)
+        # self.bn.draw_structure()
+        # print(self.bn.get_all_cpts())
+
+        # tau = self.marginal_distributions([], e)
+        tau = self.marginal_distributions(self.bn.get_all_variables(), e)
+        tau = tau.sort_values(by=['p'])
+
+        return tau.iloc[-1].to_dict()
 
 if __name__ == '__main__':
     # Playground for testing your code
-    # rnr = BNReasoner('testing/lecture_example.bifxml')
-    rnr = BNReasoner('testing/lecture_example2.bifxml')
+    rnr = BNReasoner('testing/lecture_example.bifxml')
+    # rnr = BNReasoner('testing/lecture_example2.bifxml')
     # rnr = BNReasoner('testing/lecture_example3.bifxml')
     a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
@@ -329,6 +401,13 @@ if __name__ == '__main__':
     # rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?'))
     # print(rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?')))
     # print(rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?')))
+    
+    # t = rnr.maxing_out('Wet Grass?', a.get_cpt('Wet Grass?'))
+    # t = rnr.maxing_out('Sprinkler?', t)
+
+    # t = rnr.maxing_out2('Wet Grass?', a.get_cpt('Wet Grass?'))
+    # t = rnr.maxing_out2('Sprinkler?', t)
+
     # print(rnr.factor_multiplication(a.get_cpt('Wet Grass?'), a.get_cpt('Sprinkler?')))
     # a.get_compatible_instantiations_table('B', {'A': 0, 'C': 1})
     # ['Winter?' : A, 'Sprinkler?' : B, 'Rain?' : C, 'Wet Grass?' : D, 'Slippery Road?' : E]
@@ -393,8 +472,12 @@ if __name__ == '__main__':
     # print(test)
 
     # MAP
-    map_res = rnr.MAP(['I', 'J'], {"O": True})
-    print(map_res)
+    # map_res = rnr.MAP(['I', 'J'], {"O": True})
+    # print(map_res)
+
+    # MPE
+    # mpe_res = rnr.MPE({"J": True, "O": False})
+    # print(mpe_res)
 
     # Checking VE for Q = [O, X]
     # Q = ['O', 'X']
