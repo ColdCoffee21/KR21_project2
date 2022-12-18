@@ -63,6 +63,11 @@ class BNReasoner:
         updated_factor_variables = [v for v in factor.columns if v != x]
         updated_factor_variables.pop()
         
+        updated_factor = pd.DataFrame()
+        if len(updated_factor_variables) == 0:
+            updated_factor = factor['p'].sum()
+            return updated_factor
+    
         updated_factor = factor.groupby(updated_factor_variables).sum()
         updated_factor.reset_index(inplace=True)
         if x in updated_factor.columns:
@@ -328,6 +333,13 @@ if __name__ == '__main__':
     # posterior = rnr.marginal_distribution2(['I', 'J'], {"O": True})
     # posterior = rnr.marginal_distribution2(['O', 'X'], {"J": True})
     # print(posterior)
+
+    # test = rnr.marginalization('Wet Grass?', a.get_cpt('Wet Grass?')) 
+    # print(test)
+    # test = rnr.marginalization('Sprinkler?', test)
+    # print(test)
+    # test = rnr.marginalization('Rain?', test)
+    # print(test)
 
     # Checking VE for Q = [O, X]
     # Q = ['O', 'X']
