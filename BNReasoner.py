@@ -422,7 +422,7 @@ class BNReasoner:
         return tau.iloc[-1].to_dict()
 
 
-    def MPE(self, e: dict) -> dict:
+    def MPE(self, e: dict, heuristic="min-degree") -> dict:
         """ Given evidence e, compute the MEP assignment of query variables in the Bayesian network.
 
         :return: a dictionary of the MEP assignment of query variables in the Bayesian network
@@ -432,7 +432,7 @@ class BNReasoner:
         # print(self.bn.get_all_cpts())
 
         q_wo_e = set(self.bn.get_all_variables()) - set(e.keys())
-        ordering = self.ordering(q_wo_e, "min-degree")
+        ordering = self.ordering(q_wo_e, heuristic)
         ordering = ordering + list(e.keys())
         e = pd.Series(e)
 
