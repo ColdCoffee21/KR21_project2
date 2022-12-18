@@ -145,7 +145,7 @@ class BNReasoner:
         return tracked_factor
 
     def maxing_out2(self, x: str, factor: pd.DataFrame) -> pd.DataFrame:
-        """ 
+        """ v2: Keep track by renaming the column
         :param x: name of variable x
         :param factor: dictionary of evidence variables and their values
         :return: the CPT in which X is maxed-out
@@ -257,7 +257,8 @@ class BNReasoner:
 
     def variable_elimination_fix(self, X: List[str]) -> pd.DataFrame:
         """ Sum out a set of variables by using variable elimination (according to given order).
-
+        
+        Fix: If the factor multiplication is empty, try later
         :return: the resulting factor
         """
 
@@ -326,6 +327,7 @@ class BNReasoner:
     
     def marginal_distribution2(self, Q: List[str], e: dict, heuristic="min-degree") -> pd.DataFrame:
         """ Given query variables Q, evidence E, compute the marginal distribution.
+        v2: Computes Marginal Distribution inplace
 
         :param evidence: dictionary of evidence variables and their values
         :return: Posterior Marginal
@@ -378,7 +380,6 @@ class BNReasoner:
         # self.bn.draw_structure()
         # print(self.bn.get_all_cpts())
 
-        # tau = self.marginal_distributions([], e)
         q_wo_e = set(self.bn.get_all_variables()) - set(e.keys())
         ordering = self.ordering(q_wo_e, "min-degree")
         ordering = ordering + list(e.keys())
