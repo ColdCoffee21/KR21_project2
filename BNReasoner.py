@@ -252,6 +252,10 @@ class BNReasoner:
 
         :return: a dictionary of the MAP assignment of query variables in the Bayesian network
         """
+        tau = self.marginal_distributions(Q, e)
+        tau = tau.sort_values(by=['p'])
+
+        return tau.iloc[-1].to_dict()
 
 
     def MEP(self, e: dict) -> dict:
@@ -264,8 +268,8 @@ class BNReasoner:
 if __name__ == '__main__':
     # Playground for testing your code
     # rnr = BNReasoner('testing/lecture_example.bifxml')
-    # rnr = BNReasoner('testing/lecture_example2.bifxml')
-    rnr = BNReasoner('testing/lecture_example3.bifxml')
+    rnr = BNReasoner('testing/lecture_example2.bifxml')
+    # rnr = BNReasoner('testing/lecture_example3.bifxml')
     a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
     #a.draw_structure()
@@ -323,8 +327,8 @@ if __name__ == '__main__':
     
     # posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
     # posterior = rnr.marginal_distributions(['O', 'X'], None)
-    posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
-    print(posterior)
+    # posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
+    # print(posterior)
 
     # posterior = rnr.marginal_distribution2(['C'], {'A': True})
     # posterior = rnr.marginal_distribution2(['B', 'C'], {'A': True})
@@ -340,6 +344,10 @@ if __name__ == '__main__':
     # print(test)
     # test = rnr.marginalization('Rain?', test)
     # print(test)
+
+    # MAP
+    map_res = rnr.MAP(['I', 'J'], {"O": True})
+    print(map_res)
 
     # Checking VE for Q = [O, X]
     # Q = ['O', 'X']
