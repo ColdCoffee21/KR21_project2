@@ -320,7 +320,7 @@ class BNReasoner:
             if not x in Q:
                 tau = self.marginalization(x, tau)
             visited.add(x)
-
+        
         tau['p'] = tau['p'] / tau['p'].sum()
         return tau
     
@@ -379,15 +379,45 @@ class BNReasoner:
         # print(self.bn.get_all_cpts())
 
         # tau = self.marginal_distributions([], e)
-        tau = self.marginal_distributions(self.bn.get_all_variables(), e)
-        tau = tau.sort_values(by=['p'])
+        q_wo_e = set(self.bn.get_all_variables()) - set(e.keys())
+        ordering = self.ordering(q_wo_e, "min-degree")
+        ordering = ordering + list(e.keys())
+        e = pd.Series(e)
 
-        return tau.iloc[-1].to_dict()
+        tau = pd.DataFrame()
+        visited = set()
+        for x in ordering:
+            if x not in visited and not tau.empty:
+                tau = self.factor_multiplication(tau, self.bn.get_cpt(x))
+            
+            if tau.empty:
+                tau = self.bn.get_cpt(x)
+                if any([var in e.index for var in tau.columns]):
+                    # tau = self.bn.reduce_factor(e, tau)
+                    tau = self.bn.get_compatible_instantiations_table(e, tau)
+            
+            to_visit = set(self.bn.get_children(x)) - set(visited)
+            for child in to_visit:
+                child_reduced = self.bn.get_cpt(child)
+                if any([var in e.index for var in child_reduced.columns]):
+                    # child_reduced = self.bn.reduce_factor(e, child_reduced)
+                    child_reduced = self.bn.get_compatible_instantiations_table(e, child_reduced)
+                tau = self.factor_multiplication(tau, child_reduced)
+                visited.add(child)
+            tau = self.maxing_out2(x, tau)
+            visited.add(x)
+
+        # Renaming
+        tau_cols = list(tau.columns)
+        tau_cols.remove('p')
+        tau.rename(columns={col: col.split('_')[1] for col in tau_cols}, inplace=True)
+        
+        return tau
 
 if __name__ == '__main__':
     # Playground for testing your code
-    rnr = BNReasoner('testing/lecture_example.bifxml')
-    # rnr = BNReasoner('testing/lecture_example2.bifxml')
+    # rnr = BNReasoner('testing/lecture_example.bifxml')
+    rnr = BNReasoner('testing/lecture_example2.bifxml')
     # rnr = BNReasoner('testing/lecture_example3.bifxml')
     a = rnr.bn 
     # a = BNReasoner('testing/lecture_example2.bifxml').bn
@@ -476,8 +506,8 @@ if __name__ == '__main__':
     # print(map_res)
 
     # MPE
-    # mpe_res = rnr.MPE({"J": True, "O": False})
-    # print(mpe_res)
+    mpe_res = rnr.MPE({"J": True, "O": False})
+    print(mpe_res)
 
     # Checking VE for Q = [O, X]
     # Q = ['O', 'X']
