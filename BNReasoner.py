@@ -81,17 +81,49 @@ class BNReasoner:
         # net.draw_structure()
         return net
 
-    def d_separation(self, x: str, y: str, z: list) -> bool:
+    def d_separation(self, x: Union[str, list], y: Union[str, list], z: Union[str, list]) -> bool:
         """ determine whether X is d-separated of Y given Z.
-
-        :param x: name of variable x
-        :param y: name of variable y
-        :param z: list of variables z
+        :param x: name of variable x (or list of variables)
+        :param y: name of variable y (or list of variables)
+        :param z: list of variables z (or list of variables)
         :return: True if x and y are d-separated given z, False otherwise
         """
-        pass
+        if type(x) == str:
+            x = [x]
+        if type(y) == str:
+            y = [y]
+        if type(z) == str:
+            z = [z]
+        union = x + y
+        pruned = self.networkPrune(union, z)
+        interaction_graph = pruned.get_interaction_graph()
 
-    def independence(self, x: str, y: str, z: list) -> bool:
+        queue = []
+        visited = set()
+
+        # add the variables in set X to the queue
+        for i in x:
+            queue.append(i)
+            visited.add(i)
+
+        # perform BFS
+        while queue != []:
+            # get the next variable in the queue
+            current_variable = queue.pop(0)
+            # check if the current variable is in set Y
+            if current_variable in y:
+                return False
+
+            # add the neighbors of the current variable to the queue
+            for neighb in interaction_graph.neighbors(current_variable):
+                if neighb not in visited:
+                    queue.append(neighb)
+                    visited.add(neighb)
+
+        # if the BFS completes without finding a path from X to Y, return True
+        return True
+
+    def independence(self, x: Union[str, list], y: Union[str, list], z: Union[str, list]) -> bool:
         """ determine whether X is independent of Y given Z.
 
         :param x: name of variable x
@@ -99,7 +131,26 @@ class BNReasoner:
         :param z: list of variables z
         :return: True if x and y are independent given z, False otherwise
         """
-        pass
+        if type(x) == str:
+            x = [x]
+        if type(y) == str:
+            y = [y]
+        if type(z) == str:
+            z = [z]
+        e={}
+        ey={}
+        for i in z:
+            e[i]=1
+            ey[i]=1
+        for i in y:
+            ey[i]=1
+        if not self.d_separation(x, y, z):
+            return False
+        else:
+            if abs(self.marginal_distribution2(x,e)-self.marginal_distribution2(x,ey))<0.0000001:
+                return True
+            else:
+                return False
 
     def marginalization(self, x: str, factor: pd.DataFrame) -> pd.DataFrame:
         """ 
