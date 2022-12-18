@@ -19,20 +19,67 @@ class BNReasoner:
         else:
             self.bn = net
 
-    def query(self, query_var: str, evidence: dict) -> float:
+    def networkPrune(self, query: Union[str, list], evidence: Union[str, list, pd.Series], updateCPT=False, copy =False) -> BayesNet:
         """
-        :param query_var: name of the query variable
-        :param evidence: dictionary of evidence variables and their values
-        :return: the probability of the query variable given the evidence
+        Edge-prunes and iteratively Node-prunes the Bayesian network s.t. queries of the form P(Q|E)
+        can still be correctly calculated.
+        :param query:    a variable (str) or a list of variables containing the query
+        :param evidence: a series of assignments as tuples. E.g.: pd.Series({"A": True, "B": False})
+        :returns:        The pruned version of the network w.r.t the query and evidence given.
         """
-        pass
+        # working out the different options for the input params
+        if copy:
+            net = copy.deepcopy(self.bn)
+        else:
+            net = self.bn
+        if type(query) == str:
+            query = [query]
+        if type(evidence) == list and updateCPT:
+            print("Evidence should be pd.Series in order to compute the CPTs")
+        elif type(evidence) == str:
+            evidence = [evidence]
+            var_names = evidence
+        elif type(evidence) == list:
+            var_names = evidence
+        else:
+            var_names = evidence.index.values
 
-    def prune(self, query_var: str, evidence: dict) -> BayesNet:
-        """ Edge-prune the Bayesian network s.t. queries of the form P(Q|E) can still be correctly calculated.
-        :param evidence: dictionary of evidence variables and their values
-        :return: a new BayesNet object with the evidence variables removed
-        """
-        pass
+        # Performs edge pruning
+        for var in var_names:
+            # Updates CPT of the evidence
+            if updateCPT:
+                cpt = net.get_cpt(var)
+                if evidence[var]:
+                    indexNames = cpt[cpt[var] == False].index
+                    cpt.drop(indexNames, inplace=True)
+                else:
+                    indexNames = cpt[cpt[var] == True].index
+                    cpt.drop(indexNames, inplace=True)
+
+            children = net.get_children(var)
+            for child in children:
+                # Removes edges
+                net.del_edge((var, child))
+                # Updates CPTs for the children
+                if updateCPT:
+                    net.update_cpt(child, net.get_compatible_instantiations_table(evidence, net.get_cpt(child)))
+                    net.get_cpt(child).drop(var, inplace=True, axis=1)
+
+        # Performs node pruning iteratively
+        union = list(var_names) + query
+        options = [v for v in net.get_all_variables() if v not in union]
+
+        done = False
+        while not done:
+            done = True
+            for var in options:
+                children = net.get_children(var)
+                if children == []:  # If there are still leaf nodes, we delete them and iter one more time
+                    net.del_var(var)
+                    options.remove(var)
+                    done = False
+        # net.draw_structure()
+        return net
 
     def d_separation(self, x: str, y: str, z: list) -> bool:
         """ determine whether X is d-separated of Y given Z.
