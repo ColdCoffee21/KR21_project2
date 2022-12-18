@@ -207,6 +207,40 @@ class BNReasoner:
 
         tau['p'] = tau['p'] / tau['p'].sum()
         return tau
+    
+    def marginal_distribution2(self, Q: List[str], e: dict, heuristic="min-degree") -> pd.DataFrame:
+        """ Given query variables Q, evidence E, compute the marginal distribution.
+
+        :param evidence: dictionary of evidence variables and their values
+        :return: Posterior Marginal
+        """
+
+        e = pd.Series(e)
+        to_be_eliminated = set(self.bn.get_all_variables()) - set(Q)
+        ordering = self.ordering(to_be_eliminated, heuristic)
+        
+        # Reduce all cpts wrt evidence
+        cpts = self.bn.get_all_cpts()
+        for var, cpt in cpts.items():
+            if any([var in e.index for var in cpt.columns]):
+                cpt = self.bn.reduce_factor(e, cpt)
+            self.bn.update_cpt(var, cpt)
+
+        tau = self.variable_elimination(ordering)
+        visited = list(ordering)    
+        for var in ordering:
+            visited = visited + self.bn.get_children(var)
+
+        to_visit = [var for var in Q if var not in visited]
+        if tau.empty:
+            tau = self.bn.get_cpt(to_visit[0])
+            to_visit = to_visit[1:]
+        for var in to_visit:
+            tau = self.factor_multiplication(tau, self.bn.get_cpt(var))
+
+        # Change to sum-out
+        tau['p'] = tau['p'] / tau['p'].sum() # Normalize
+        return tau
 
     def MAP(self, Q: List[str], e: dict) -> dict:
         """ Computes the MAP instantiation + value of query variables Q, given a possibly empty evidence e. 
@@ -280,11 +314,20 @@ if __name__ == '__main__':
     # posterior = rnr.marginal_distributions(['C'], {'A': True})
     # posterior = rnr.marginal_distributions(['B', 'C'], {'A': True})
     # posterior = rnr.marginal_distributions(['B', 'C'], None)
+    # posterior = rnr.marginal_distributions(['A', 'B', 'C'], None)
     
     # posterior = rnr.marginal_distributions(['O', 'X'], {"J": True})
-    posterior = rnr.marginal_distributions(['O', 'X'], None)
-    # posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
+    # posterior = rnr.marginal_distributions(['O', 'X'], None)
+    posterior = rnr.marginal_distributions(['I', 'J'], {"O": True})
     print(posterior)
+
+    # posterior = rnr.marginal_distribution2(['C'], {'A': True})
+    # posterior = rnr.marginal_distribution2(['B', 'C'], {'A': True})
+    # posterior = rnr.marginal_distribution2(['A', 'B', 'C'], None)
+    # posterior = rnr.marginal_distribution2(['O', 'X'], None)
+    # posterior = rnr.marginal_distribution2(['I', 'J'], {"O": True})
+    # posterior = rnr.marginal_distribution2(['O', 'X'], {"J": True})
+    # print(posterior)
 
     # Checking VE for Q = [O, X]
     # Q = ['O', 'X']
